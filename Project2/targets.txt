@@ -1,2 +1,3 @@
 case.edu
 google.com
+example.com
