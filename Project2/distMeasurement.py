@@ -1,4 +1,4 @@
-import os, sys, socket, struct, select, time
+import os, sys, socket, struct, select, time, ipaddress
 
 #Credit: Samuel Stauffer (for the default_timer)
 if sys.platform == "win32":
@@ -37,12 +37,18 @@ def rcvMsg(rcvSocket, timeout, expectedSource):
         return 
 
     rcvTime = default_timer()
-    icmp_packet = rcvSocket.recv(max_length)
+    icmp_packet, source = rcvSocket.recvfrom(max_length)
+    source = source[0]
 
-    return icmp_packet
-    #print(icmp_packet)
+    if source == expectedSource:
+        return icmp_packet
+    else:
+        return
 
 
+def extractInfo(icmp_packet):
+    return
+    
 
 #TODO
 def measureAll(siteList):
@@ -63,7 +69,7 @@ def measureAll(siteList):
         sendMsg(sendSocket, dest_ip, dest_port)
         sendSocket.close()
 
-        rcvPacket = rcvMsg(rcvSocket, 40, dest_addr)
+        rcvPacket = rcvMsg(rcvSocket, 40, dest_ip)
         rcvSocket.close()
         if rcvPacket != None:
             print("packet recieved")
