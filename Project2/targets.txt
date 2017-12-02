@@ -6,5 +6,5 @@ azlyrics.com
 investing.com
 mailchimp.com
 hulu.com
-duolingo.com
-yahoo.com
+serebii.net
+stackoverflow.com

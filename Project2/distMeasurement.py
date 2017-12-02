@@ -1,12 +1,9 @@
-import os, sys, socket, struct, select, time, ipaddress
+#Jessie Adkins
+#jsa70
+#EECS 325
+#Project 2
 
-#Credit: Samuel Stauffer (for the default_timer)
-if sys.platform == "win32":
-    # On Windows, the best timer is time.clock()
-    default_timer = time.clock
-else:
-    # On most other platforms the best timer is time.time()
-    default_timer = time.time
+import os, sys, socket, struct, select, time, ipaddress
 
 sendTime = 0
 rcvTime = 0
@@ -14,6 +11,7 @@ defaultTTL = 32
 
 
 def readSitesFromFile():
+    #parse websites from file
     with open('targets.txt') as f:
         siteList = f.readlines()
     siteList = [x.strip() for x in siteList]
@@ -21,11 +19,13 @@ def readSitesFromFile():
 
 def sendMsg(sendSocket, dest_ip, dest_port):
     print("Send Message to " + dest_ip)
+    #create packet that won't freakout network admins
     msg = "measurement for class project. questions to student jsa70@case.edu or professor mxr136@case.edu"
     payload = bytes(msg + 'a' * (1472 - len(msg)), 'ascii')
 
+    #actually send packet
     sendSocket.sendto(payload, (dest_ip, dest_port))
-    sendTime = default_timer()
+    sendTime = time.clock()
     return
 
 def rcvMsg(rcvSocket, timeout, expectedSource):
@@ -33,17 +33,17 @@ def rcvMsg(rcvSocket, timeout, expectedSource):
 
     print("...waiting for reply...")
 
+    #wait for a response
     socketContents = select.select([rcvSocket], [], [], timeout)
     if socketContents[0] == []: # Timeout
         return 
 
-    rcvTime = default_timer()
-    #rcvPacket = bytearray(max_length)
+    #mark the time and read packet in from socket
+    rcvTime = time.clock()
     icmp_packet, source = rcvSocket.recvfrom(max_length)
     source = source[0]
 
-    #print(icmp_packet)
-
+    #if this is the packet we are looking for, pull data
     if source == expectedSource:
         print("RTT: " + str(rcvTime - sendTime))
         
@@ -60,9 +60,7 @@ def rcvMsg(rcvSocket, timeout, expectedSource):
         return
     
 
-#TODO
 def measureAll(siteList):
-    #TODO make this a for loop and do everything
     for dest_addr in siteList:
         print("----------------------------------------------------------------------")
         print(dest_addr)
@@ -71,17 +69,22 @@ def measureAll(siteList):
         dest_ip = socket.gethostbyname(dest_addr)
         dest_port = 50002
 
+        #try to get a reply multiple times
         for attempt in range(0, 3):
+            #output socket setup
             sendSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.getprotobyname("udp"))
             sendSocket.setsockopt(socket.SOL_IP, socket.IP_TTL, defaultTTL)
 
+            #input socket setup
             rcvSocket = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP)
             rcvSocket.bind(("", 0))
 
+            #send probe
             sendMsg(sendSocket, dest_ip, dest_port)
             sendSocket.close()
 
-            rcvPacket = rcvMsg(rcvSocket, 40, dest_ip)
+            #look for reply packet
+            rcvPacket = rcvMsg(rcvSocket, 20, dest_ip)
             rcvSocket.close()
             if rcvPacket != None:
                 break
@@ -93,15 +96,13 @@ def measureAll(siteList):
     return
 
 def main():
+    #Read in from file
     siteList = readSitesFromFile()
     print("Input websites: ")
     print(siteList)
-    #TODO
 
     measureAll(siteList)
-
-    #TODO CHANGE THIS
-    return 0
+    return 
 
 
 if __name__ == '__main__':
