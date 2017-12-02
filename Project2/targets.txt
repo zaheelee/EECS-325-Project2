@@ -1,3 +1,10 @@
 case.edu
-google.com
-example.com
+python.org
+twitter.com
+cwru.edu
+azlyrics.com
+investing.com
+mailchimp.com
+hulu.com
+duolingo.com
+yahoo.com

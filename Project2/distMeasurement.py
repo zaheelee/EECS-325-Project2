@@ -10,6 +10,7 @@ else:
 
 sendTime = 0
 rcvTime = 0
+defaultTTL = 32
 
 
 def readSitesFromFile():
@@ -28,7 +29,7 @@ def sendMsg(sendSocket, dest_ip, dest_port):
     return
 
 def rcvMsg(rcvSocket, timeout, expectedSource):
-    max_length = 1500
+    max_length = 2048
 
     print("...waiting for reply...")
 
@@ -37,44 +38,58 @@ def rcvMsg(rcvSocket, timeout, expectedSource):
         return 
 
     rcvTime = default_timer()
+    #rcvPacket = bytearray(max_length)
     icmp_packet, source = rcvSocket.recvfrom(max_length)
     source = source[0]
 
+    #print(icmp_packet)
+
     if source == expectedSource:
+        print("RTT: " + str(rcvTime - sendTime))
+        
+        ttl = struct.unpack("!B", icmp_packet[36:37])[0]
+        hops = defaultTTL - ttl
+        print("Hops: " + str(hops))
+
+        rcvBytes = len(icmp_packet[28:])
+        print("Bytes Returned: " + str(rcvBytes))
+        
         return icmp_packet
     else:
+        print("Packet recieved from an unexpected address")
         return
-
-
-def extractInfo(icmp_packet):
-    return
     
 
 #TODO
 def measureAll(siteList):
     #TODO make this a for loop and do everything
-    dest_addr = siteList[0]
-
-    
-    dest_ip = socket.gethostbyname(dest_addr)
-    dest_port = 50002
-
-    for attempt in range(0, 3):
-        sendSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.getprotobyname("udp"))
-        sendSocket.setsockopt(socket.SOL_IP, socket.IP_TTL, 32)
-
-        rcvSocket = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP)
-        rcvSocket.bind(("", 0))
-
-        sendMsg(sendSocket, dest_ip, dest_port)
-        sendSocket.close()
-
-        rcvPacket = rcvMsg(rcvSocket, 40, dest_ip)
-        rcvSocket.close()
-        if rcvPacket != None:
-            print("packet recieved")
-            break
+    for dest_addr in siteList:
+        print("----------------------------------------------------------------------")
+        print(dest_addr)
+        print()
         
+        dest_ip = socket.gethostbyname(dest_addr)
+        dest_port = 50002
+
+        for attempt in range(0, 3):
+            sendSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.getprotobyname("udp"))
+            sendSocket.setsockopt(socket.SOL_IP, socket.IP_TTL, defaultTTL)
+
+            rcvSocket = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP)
+            rcvSocket.bind(("", 0))
+
+            sendMsg(sendSocket, dest_ip, dest_port)
+            sendSocket.close()
+
+            rcvPacket = rcvMsg(rcvSocket, 40, dest_ip)
+            rcvSocket.close()
+            if rcvPacket != None:
+                break
+
+        if rcvPacket == None:
+            print(dest_addr + " could not be reached")
+
+        print("----------------------------------------------------------------------")   
     return
 
 def main():
